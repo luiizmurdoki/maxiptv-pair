@@ -31,7 +31,7 @@
   #statusEl { margin-top: 14px; font-size: 14px; min-height: 20px; }
   #statusEl.ok { color: #34D399; }
   #statusEl.err { color: #ff6b6b; }
-  #noCode { color: #ff6b6b; }
+  #codeInput { text-transform: lowercase; letter-spacing: 1px; }
 </style>
 </head>
 <body>
@@ -48,9 +48,23 @@
     var code = qs('code');
     var app = document.getElementById('app');
 
+    // Sem ?code= na URL (quem digitou o link à mão em vez de escanear o QR):
+    // pede o código mostrado na TV antes de seguir pro formulário.
     if (!code) {
-      app.innerHTML = '<p id="noCode">Nenhum código encontrado. Volte pra TV, abra "Parear com celular" de novo e escaneie o QR (ou o link) mais recente.</p>';
+      app.innerHTML =
+        '<p>Digite o código de 6 letras/números mostrado na tela da TV:</p>' +
+        '<input type="text" id="codeInput" placeholder="ex.: a1b2c3" maxlength="12" autocapitalize="off" autocorrect="off" spellcheck="false">' +
+        '<button id="codeBtn">Continuar</button>';
+      document.getElementById('codeBtn').addEventListener('click', function () {
+        var c = (document.getElementById('codeInput').value || '').trim().toLowerCase();
+        if (!c) return;
+        location.search = '?code=' + encodeURIComponent(c);
+      });
     } else {
+      renderForm(code);
+    }
+
+    function renderForm(code) {
       app.innerHTML =
         '<p>Cole abaixo a URL completa da sua lista IPTV (o link do tipo <em>...get.php?username=...&amp;password=...</em>) e envie. Ela vai direto pra TV.</p>' +
         '<input type="url" id="urlInput" placeholder="http://seuprovedor.com/get.php?username=...&password=..." autocapitalize="off" autocorrect="off" spellcheck="false">' +
