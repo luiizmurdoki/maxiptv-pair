@@ -27,6 +27,7 @@
     background: #FFB020; color: #1a1300; font-weight: 700; font-size: 16px;
     cursor: pointer;
   }
+  button.ghost { background: transparent; color: #F6F8FC; border: 1px solid #222A36; margin-top: 10px; }
   button:disabled { opacity: 0.5; }
   #statusEl { margin-top: 14px; font-size: 14px; min-height: 20px; }
   #statusEl.ok { color: #34D399; }
@@ -41,11 +42,21 @@
   </div>
 
   <script>
+    // Credenciais do MESMO Supabase que os apps já usam — apikey pública por
+    // natureza (protegida por RLS no banco, não por ser secreta; é a mesma
+    // chave que já vem embutida nos dois apps). Login de verdade acontece
+    // AQUI, direto com o Supabase — a senha nunca passa pelo relé do ntfy.sh,
+    // só o resultado (um token de sessão) é que viaja pra TV. Ver
+    // CONTEXTO-PROJETO seção 59.
+    var SUPABASE_URL = 'https://onwutxmlzyfvcvyssysx.supabase.co';
+    var SUPABASE_ANON_KEY = 'sb_publishable_ZbJ7ZnED4Cx8QPv-gFWaGA_3qd6uLEc';
+
     function qs(name) {
       var m = new RegExp('[?&]' + name + '=([^&]+)').exec(location.search);
       return m ? decodeURIComponent(m[1]) : null;
     }
     var code = qs('code');
+    var modo = qs('modo'); // 'login' (23/08) — ausente/qualquer outro valor = fluxo de sempre (URL da lista)
     var app = document.getElementById('app');
 
     // Sem ?code= na URL (quem digitou o link à mão em vez de escanear o QR):
@@ -58,13 +69,16 @@
       document.getElementById('codeBtn').addEventListener('click', function () {
         var c = (document.getElementById('codeInput').value || '').trim().toLowerCase();
         if (!c) return;
-        location.search = '?code=' + encodeURIComponent(c);
+        location.search = '?code=' + encodeURIComponent(c) + (modo ? '&modo=' + encodeURIComponent(modo) : '');
       });
+    } else if (modo === 'login') {
+      renderLoginForm(code);
     } else {
-      renderForm(code);
+      renderListForm(code);
     }
 
-    function renderForm(code) {
+    // ---------- Fluxo de sempre: URL da lista IPTV ----------
+    function renderListForm(code) {
       app.innerHTML =
         '<p>Cole abaixo a URL completa da sua lista IPTV (o link do tipo <em>...get.php?username=...&amp;password=...</em>) e envie. Ela vai direto pra TV.</p>' +
         '<input type="url" id="urlInput" placeholder="http://seuprovedor.com/get.php?username=...&password=..." autocapitalize="off" autocorrect="off" spellcheck="false">' +
@@ -85,25 +99,110 @@
         btn.disabled = true;
         statusEl.className = '';
         statusEl.textContent = 'Enviando…';
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'https://ntfy.sh/maxiptv-pair-' + encodeURIComponent(code), true);
-        xhr.onload = function () {
+        publicar(code, url, function () {
           btn.disabled = false;
-          if (xhr.status >= 200 && xhr.status < 300) {
-            statusEl.className = 'ok';
-            statusEl.textContent = 'Enviado! Pode voltar pra TV — ela vai conectar sozinha.';
+          statusEl.className = 'ok';
+          statusEl.textContent = 'Enviado! Pode voltar pra TV — ela vai conectar sozinha.';
+        }, function (msg) {
+          btn.disabled = false;
+          statusEl.className = 'err';
+          statusEl.textContent = msg;
+        });
+      });
+    }
+
+    // ---------- Novo (23/08): login direto no celular ----------
+    // A senha NUNCA sai deste formulário pro relé — ela vai só pro Supabase,
+    // no POST abaixo. O que a TV recebe é o RESULTADO (token de sessão), não a
+    // senha. É o mesmo princípio do gerenciador de senhas do celular: ele
+    // preenche este formulário normal, como qualquer site.
+    function renderLoginForm(code) {
+      app.innerHTML =
+        '<p>Entra com sua conta Max IPTV. Sua senha fica só aqui — a TV recebe apenas a confirmação de que você entrou.</p>' +
+        '<input type="email" id="emailInput" placeholder="e-mail" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="email">' +
+        '<input type="password" id="senhaInput" placeholder="senha" autocomplete="current-password">' +
+        '<button id="entrarBtn">Entrar</button>' +
+        '<button id="criarBtn" class="ghost">Criar conta</button>' +
+        '<div id="statusEl"></div>';
+
+      var emailInput = document.getElementById('emailInput');
+      var senhaInput = document.getElementById('senhaInput');
+      var entrarBtn = document.getElementById('entrarBtn');
+      var criarBtn = document.getElementById('criarBtn');
+      var statusEl = document.getElementById('statusEl');
+
+      function ambosBotoes(disabled) { entrarBtn.disabled = disabled; criarBtn.disabled = disabled; }
+
+      function autenticar(caminho, sucessoMsg) {
+        var email = (emailInput.value || '').trim();
+        var senha = senhaInput.value || '';
+        if (!email || !senha) {
+          statusEl.className = 'err';
+          statusEl.textContent = 'Preenche e-mail e senha.';
+          return;
+        }
+        ambosBotoes(true);
+        statusEl.className = '';
+        statusEl.textContent = 'Um momento…';
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', SUPABASE_URL + '/auth/v1' + caminho, true);
+        xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onload = function () {
+          var d = null;
+          try { d = JSON.parse(xhr.responseText); } catch (e) {}
+          if (xhr.status >= 200 && xhr.status < 300 && d && d.access_token) {
+            // Achou sessão — manda só o TOKEN pra TV, nunca a senha.
+            var payload = JSON.stringify({
+              kind: 'login',
+              access_token: d.access_token,
+              refresh_token: d.refresh_token,
+              expires_in: d.expires_in,
+              uid: d.user && d.user.id
+            });
+            publicar(code, payload, function () {
+              ambosBotoes(false);
+              statusEl.className = 'ok';
+              statusEl.textContent = sucessoMsg + ' Pode voltar pra TV.';
+            }, function (msg) {
+              ambosBotoes(false);
+              statusEl.className = 'err';
+              statusEl.textContent = msg;
+            });
           } else {
+            ambosBotoes(false);
             statusEl.className = 'err';
-            statusEl.textContent = 'Falha ao enviar (HTTP ' + xhr.status + '). Tente de novo.';
+            var msg = (d && (d.error_description || d.msg || d.error)) || ('Erro ' + xhr.status);
+            if (/already registered|already exists/i.test(msg)) msg = 'Este e-mail já tem cadastro — tenta "Entrar".';
+            else if (/invalid login credentials/i.test(msg)) msg = 'E-mail ou senha errados.';
+            else if (/password/i.test(msg) && xhr.status === 422) msg = 'A senha precisa ter pelo menos 6 caracteres.';
+            else if (!d) msg = 'Cadastro criado — confirme pelo e-mail antes de entrar.';
+            statusEl.textContent = msg;
           }
         };
         xhr.onerror = function () {
-          btn.disabled = false;
+          ambosBotoes(false);
           statusEl.className = 'err';
           statusEl.textContent = 'Erro de rede. Verifique sua internet e tente de novo.';
         };
-        xhr.send(url);
-      });
+        xhr.send(JSON.stringify({ email: email, password: senha }));
+      }
+
+      entrarBtn.addEventListener('click', function () { autenticar('/token?grant_type=password', 'Entrou!'); });
+      criarBtn.addEventListener('click', function () { autenticar('/signup', 'Conta criada!'); });
+    }
+
+    // ---------- Relé (ntfy.sh) — compartilhado pelos dois fluxos ----------
+    function publicar(code, texto, ok, err) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://ntfy.sh/maxiptv-pair-' + encodeURIComponent(code), true);
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) ok();
+        else err('Falha ao enviar (HTTP ' + xhr.status + '). Tente de novo.');
+      };
+      xhr.onerror = function () { err('Erro de rede. Verifique sua internet e tente de novo.'); };
+      xhr.send(texto);
     }
   </script>
 </body>
