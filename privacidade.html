@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Max IPTV — Política de Privacidade</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    background: #070A0F; color: #F6F8FC;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    padding: 24px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 0 80px; }
+  .brand { color: #FFB020; font-weight: 800; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .atualizado { color: #93A0B4; font-size: 14px; margin: 0 0 36px; }
+  h2 { font-size: 19px; margin: 40px 0 12px; color: #F6F8FC; }
+  p, li { color: #C3CCD9; font-size: 15px; line-height: 1.65; }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 8px; }
+  strong { color: #F6F8FC; }
+  a { color: #FFB020; }
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #222A36; color: #C3CCD9; }
+  th { color: #F6F8FC; }
+  .box {
+    background: #0F141C; border: 1px solid #222A36; border-radius: 12px;
+    padding: 16px 18px; margin: 16px 0; font-size: 14px; color: #93A0B4;
+  }
+  .voltar { display: inline-block; margin-top: 40px; color: #93A0B4; text-decoration: none; font-size: 14px; }
+  .voltar:hover { color: #FFB020; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1><span class="brand">Max IPTV</span> — Política de Privacidade</h1>
+    <p class="atualizado">Última atualização: 24 de agosto de 2026</p>
+
+    <p>Esta política explica quais dados o <strong>Max IPTV</strong> (apps para Samsung Smart TV e Apple TV) coleta, para quê, e como você pode controlá-los. Escrevemos ela olhando pro que o app realmente faz — sem coletar mais do que o necessário pra ele funcionar.</p>
+
+    <h2>Quem somos</h2>
+    <p>O Max IPTV é operado por Eduardo Alves Coutinho. Dúvidas sobre esta política ou sobre os seus dados: <a href="mailto:edualvescoutinho@gmail.com">edualvescoutinho@gmail.com</a>.</p>
+
+    <h2>O que o app NÃO coleta</h2>
+    <p>A credencial da sua lista IPTV (usuário, senha e URL do seu provedor) <strong>fica gravada só no seu aparelho</strong> — nunca é enviada para os nossos servidores. É o app que fala diretamente com o seu provedor pra buscar os canais/filmes; nós não vemos, guardamos, nem temos acesso a essa credencial em nenhum momento.</p>
+
+    <h2>O que coletamos e por quê</h2>
+    <table>
+      <tr><th>Dado</th><th>Pra quê</th></tr>
+      <tr><td>E-mail e senha</td><td>Criar e autenticar sua conta. A senha é gerenciada pelo nosso provedor de autenticação (Supabase) e nunca é armazenada em texto puro por nós.</td></tr>
+      <tr><td>Nome do perfil (ex.: "Edu")</td><td>Diferenciar quem está assistindo, quando mais de uma pessoa usa a mesma conta.</td></tr>
+      <tr><td>Favoritos</td><td>Lembrar quais canais/filmes/séries você marcou, e sincronizar isso entre seus aparelhos.</td></tr>
+      <tr><td>Progresso de exibição</td><td>"Continuar assistindo" e o selo de "já assistido" — onde você parou em cada título, sincronizado entre aparelhos.</td></tr>
+      <tr><td>Identificador de conta (UUID)</td><td>Ligar seus dados (favoritos, progresso, perfis) à sua conta, sem usar informação pessoal como chave.</td></tr>
+      <tr><td>Status de assinatura</td><td>Quando a assinatura por loja de aplicativos estiver disponível: saber se sua conta está ativa, sem processar pagamento nós mesmos.</td></tr>
+    </table>
+
+    <h2>Com quem compartilhamos</h2>
+    <ul>
+      <li><strong>Supabase</strong> — hospeda nosso banco de dados (conta, perfis, favoritos, progresso). Atua como operador dos dados em nosso nome, sob as políticas de segurança da nossa aplicação.</li>
+      <li><strong>TMDB (The Movie Database)</strong> — usamos pra buscar capas e sinopses de filmes/séries a partir do TÍTULO. Nenhum dado pessoal seu é enviado nessa busca.</li>
+      <li><strong>ntfy.sh</strong> — usado só durante o pareamento por QR code (celular → TV), por alguns minutos, pra transportar a URL da sua lista ou o resultado do login. Não guardamos nada lá depois que o pareamento termina.</li>
+      <li><strong>Apple / Samsung</strong> — quando você assina pela loja de aplicativos, é a própria loja quem processa o pagamento. Não temos acesso a dados do seu cartão ou meio de pagamento.</li>
+    </ul>
+    <p>Não vendemos seus dados, e não usamos publicidade nem rastreamento de terceiros dentro do app.</p>
+
+    <h2>Segurança</h2>
+    <ul>
+      <li>Cada conta só acessa os próprios dados — reforçado por regras de segurança no banco de dados (Row Level Security), não só na tela do app.</li>
+      <li>Toda comunicação entre o app e nossos servidores é criptografada (HTTPS).</li>
+      <li>Sua senha nunca é armazenada em texto puro.</li>
+    </ul>
+
+    <h2>Por quanto tempo guardamos</h2>
+    <p>Enquanto sua conta existir. Se você pedir a exclusão da conta, apagamos seus dados (perfis, favoritos, progresso, e-mail) dos nossos servidores.</p>
+
+    <h2>Seus direitos</h2>
+    <p>Você pode, a qualquer momento, pedir:</p>
+    <ul>
+      <li><strong>Acesso</strong> aos dados que temos sobre você;</li>
+      <li><strong>Correção</strong> de dados incorretos;</li>
+      <li><strong>Exclusão</strong> da sua conta e de todos os dados associados;</li>
+      <li><strong>Portabilidade</strong> — uma cópia dos seus dados em formato legível.</li>
+    </ul>
+    <p>Pra qualquer um desses pedidos, escreva pra <a href="mailto:edualvescoutinho@gmail.com">edualvescoutinho@gmail.com</a>.</p>
+
+    <h2>Crianças</h2>
+    <p>O Max IPTV não é direcionado a crianças, e não coletamos intencionalmente dados de menores de 13 anos.</p>
+
+    <h2>Mudanças nesta política</h2>
+    <p>Se atualizarmos esta política, a data no topo desta página muda. Mudanças relevantes serão avisadas dentro do app.</p>
+
+    <div class="box">
+      Esta política foi escrita com base no funcionamento real e atual dos apps, mas não substitui aconselhamento jurídico. Recomendamos revisão por um advogado antes do lançamento comercial oficial nas lojas.
+    </div>
+
+    <a class="voltar" href="./">← Voltar</a>
+  </div>
+</body>
+</html>
