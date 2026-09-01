@@ -104,7 +104,7 @@
         btn.disabled = true;
         statusEl.className = '';
         statusEl.textContent = 'Enviando…';
-        publicar(code, url, function () {
+        publicar(code, { kind: 'lista', url: url }, function () {
           btn.disabled = false;
           statusEl.className = 'ok';
           statusEl.textContent = 'Enviado! Pode voltar pra TV — ela vai conectar sozinha.';
@@ -159,7 +159,7 @@
           try { d = JSON.parse(xhr.responseText); } catch (e) {}
           if (xhr.status >= 200 && xhr.status < 300 && d && d.access_token) {
             // Achou sessão — manda só o TOKEN pra TV, nunca a senha.
-            var payload = JSON.stringify({
+            var payload = ({
               kind: 'login',
               access_token: d.access_token,
               refresh_token: d.refresh_token,
@@ -198,16 +198,33 @@
       criarBtn.addEventListener('click', function () { autenticar('/signup', 'Conta criada!'); });
     }
 
-    // ---------- Relé (ntfy.sh) — compartilhado pelos dois fluxos ----------
-    function publicar(code, texto, ok, err) {
+    // ---------- Relé PRÓPRIO — compartilhado pelos dois fluxos ----------
+    //
+    // Trocado em 01/09. Antes isto publicava num tópico PÚBLICO do ntfy.sh, e o
+    // que passava por lá era: a URL do provedor (usuário e senha inteiros) no
+    // fluxo de lista, e o access_token/refresh_token da conta no fluxo de login.
+    // Qualquer pessoa lê um tópico de lá sem autenticação — verificado com curl.
+    //
+    // Agora vai para uma função nossa, que entrega o conteúdo UMA vez e só para
+    // quem tem o segredo — e o segredo nunca sai da TV. Ver a documentação em
+    // `MaxIPTVCore/ReleDePareamento.swift`.
+    function publicar(code, conteudo, ok, err) {
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', 'https://ntfy.sh/maxiptv-pair-' + encodeURIComponent(code), true);
+      xhr.open('POST', SUPABASE_URL + '/functions/v1/parear', true);
+      xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + SUPABASE_ANON_KEY);
+      xhr.setRequestHeader('Content-Type', 'application/json');
       xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) ok();
-        else err('Falha ao enviar (HTTP ' + xhr.status + '). Tente de novo.');
+        if (xhr.status >= 200 && xhr.status < 300) { ok(); return; }
+        var msg = 'Falha ao enviar (HTTP ' + xhr.status + '). Tente de novo.';
+        // O código vale 5 minutos; passar disso é o erro mais provável aqui, e
+        // dizer isso poupa a pessoa de tentar de novo com o código velho.
+        if (xhr.status === 404) msg = 'Este código expirou. Gere um novo na TV.';
+        if (xhr.status === 409) msg = 'Este código já foi usado. Gere um novo na TV.';
+        err(msg);
       };
       xhr.onerror = function () { err('Erro de rede. Verifique sua internet e tente de novo.'); };
-      xhr.send(texto);
+      xhr.send(JSON.stringify({ acao: 'publicar', codigo: code, conteudo: conteudo }));
     }
   </script>
 </body>
